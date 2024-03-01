@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: ..
+      dockerfile: ./cmd/app/Dockerfile
+    container_name: app-app
+    ports:
+    - "8080:8080"
+    networks:
+      backend:
+  generator:
+    build:
+      context: ..
+      dockerfile: ./cmd/generator/Dockerfile
+    container_name: app-generator
+    networks:
+      backend:
+  prometheus:
+    image: prom/prometheus:v2.49.1
+    container_name: app-prometheus
+    user: root
+    restart: always
+    volumes:
+    - ./etc/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+    - "9090:9090"
+    networks:
+      backend:
+  grafana:
+    image: grafana/grafana:10.3.1
+    container_name: app-grafana
+    restart: always
+    user: "472"
+    volumes:
+    - ./etc/grafana/provisioning:/etc/grafana/provisioning
+    - ./etc/grafana/dashboards:/etc/grafana/dashboards
+    environment:
+      GF_AUTH_DISABLE_LOGIN_FORM: 'true'
+      GF_AUTH_ANONYMOUS_ENABLED: 'true'
+      GF_AUTH_ANONYMOUS_ORG_ROLE: 'Admin'
+    ports:
+    - "3000:3000"
+    depends_on:
+    - prometheus
+    networks:
+      backend:
+
+networks:
+  backend:
+    name: app_backend
+    driver: bridge
+    ipam:
+      driver: default
